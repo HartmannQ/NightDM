@@ -1,6 +1,7 @@
 # NightDM
+<img src="http://i.imgur.com/Mmu6bPK.jpg" alt="">
 <p>Plugin puts in the time that you want dm mode.
-                             When the plugin is active is he doing next(when it comes your time, without changing the map):</p>
+When the plugin is active is he doing next(when it comes your time, without changing the map):</p>
 <ul type="none" align="left">
 <li>- Remove object on map,</li>
 <li>- Block round end,</li>
