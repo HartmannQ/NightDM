@@ -1,14 +1,15 @@
 /*-----------------------------------------------------------
-[*] NightDM v1.0
+[*] NightDM v1.1
  * Copyright (C) 2015  Hartmann
  - - - - - - - - - - -
  AMX Mod X script.
 
           | Author  : Hartmann
           | Plugin  : NightDM
-          | Version : v1.0
+          | Version : v1.1
 	  
- (!) Support : https://github.com/Hartmannq
+ (!) Support : Github - https://github.com/Hartmannq
+               AlliedModders - https://forums.alliedmods.net/showthread.php?t=265763
 
  This program is free software; you can redistribute it and/or
  modify it under the terms of the GNU General Public License
@@ -41,7 +42,7 @@
 		- Remove money(hud),
 		- Remove(hud) and block timer,
 		- Spawn protection,
-		- HP for kill, hs, screen fade and give armor and hegranade on spawn,
+		- HP for kill, hs, screen fade and give armor and granades on spawn,
 		- Remove weapon on ground,
 		- Every full BPAmmo,
 		- ...
@@ -61,12 +62,25 @@
 			+ dx_max_hp 100// Maximum player's HP.
 			+ dx_armor 100 // Amout of armor to be given.
 			+ dx_prefix CSDM // Prefix
+			+ dx_msg_color "0 130 0"  // Message color
+			+ dx_msg_xypos "0.02 0.2" // Message X Y
+			+ dx_msg 1 // Message. 1- On 0-off
+			+ dx_grenades "abc" // a - he grenade, b - smoke grenade, c - flashbang 
+			+ dx_change "ab" // a - change sky on space, b - change lights on d
 		
            - - - - - -
            Changelog:
            - - - - - -
              v1.0 [4.jul.2015]
               - First release.
+	     v1.1 [17.aug.2015]
+	      - Customizable Weapons list for Primary and Secondary weapons (ini file).
+	      - Added Multilingual support.
+	      - Added cvar for granades.
+	      - Added cvar for change space and lights.
+	      - Added cvar for message enable/disable, color and xy position.
+	      - Added print in color.
+	      
 ------------------------------------------------------------*/
 
 #include <amxmodx>
@@ -79,44 +93,15 @@
 
 new PLUGIN[] = "NightDM";
 new AUTHOR[] = "Hartmann";
-new VERSION[] = "1.0";
+new VERSION[] = "1.1";
 
 #pragma semicolon 1
 
 #define HUD_HIDE_MONEY (1<<5)
 #define HUD_HIDE_TIMER (1<<4)
 #define fm_cs_set_user_nobuy(%1)    set_pdata_int(%1, 235, get_pdata_int(%1, 235) & ~(1<<0))
-#define PISTOL_WEAPONS_BIT    (1<<CSW_GLOCK18|1<<CSW_USP|1<<CSW_DEAGLE|1<<CSW_P228|1<<CSW_FIVESEVEN|1<<CSW_ELITE)
-#define SHOTGUN_WEAPONS_BIT    (1<<CSW_M3|1<<CSW_XM1014)
-#define SUBMACHINE_WEAPONS_BIT    (1<<CSW_TMP|1<<CSW_MAC10|1<<CSW_MP5NAVY|1<<CSW_UMP45|1<<CSW_P90)
-#define RIFLE_WEAPONS_BIT    (1<<CSW_FAMAS|1<<CSW_GALIL|1<<CSW_AK47|1<<CSW_SCOUT|1<<CSW_M4A1|1<<CSW_SG550|1<<CSW_SG552|1<<CSW_AUG|1<<CSW_AWP|1<<CSW_G3SG1)
-#define MACHINE_WEAPONS_BIT    (1<<CSW_M249)
-#define PRIMARY_WEAPONS_BIT    (SHOTGUN_WEAPONS_BIT|SUBMACHINE_WEAPONS_BIT|RIFLE_WEAPONS_BIT|MACHINE_WEAPONS_BIT)
-#define SECONDARY_WEAPONS_BIT    (PISTOL_WEAPONS_BIT)
-#define IsPrimaryWeapon(%1) ( (1<<%1) & PRIMARY_WEAPONS_BIT )
-#define IsSecondaryWeapon(%1) ( (1<<%1) & PISTOL_WEAPONS_BIT )
-#define MIN_WEAPON		CSW_P228
-#define MAX_WEAPON 		CSW_P90
 #define	MAX_SPAWNS	60
 
-new const g_szWeaponClassnames[ MAX_WEAPON + 1 ][ ] ={
-	"", "weapon_p228", "", "weapon_scout", "weapon_hegrenade",
-	"weapon_xm1014", "weapon_c4", "weapon_mac10", "weapon_aug",
-	"weapon_smokegrenade", "weapon_elite", "weapon_fiveseven",
-	"weapon_ump45", "weapon_sg550", "weapon_galil", "weapon_famas",
-	"weapon_usp", "weapon_glock18", "weapon_awp", "weapon_mp5navy",
-	"weapon_m249", "weapon_m3", "weapon_m4a1", "weapon_tmp", "weapon_g3sg1",
-	"weapon_flashbang", "weapon_deagle", "weapon_sg552", "weapon_ak47",
-	"weapon_knife", "weapon_p90"
-};
-
-new const g_szWeaponNames[ MAX_WEAPON + 1 ][ ] ={
-	"", "P228", "", "Schmidt Scout", "", "XM1014 (Auto-Shotgun)", "",
-	"Mac-10", "AUG", "", "Dual Elites", "Five-Seven", "UMP-45", "SG-550",
-	"Galil", "Famas", "USP", "Glock-18", "AWP", "MP5-Navy", "M249 (Para)",
-	"M3 (Pump-Shotgun)", "M4A1", "TMP", "G3SG1", "", "Deagle", "SG-552",
-	"AK-47", "", "P90"
-};
 new const g_objective_ents[][] = {
 	"func_bomb_target",
 	"info_bomb_target",
@@ -170,6 +155,15 @@ new Float:g_SpawnVAngles[MAX_SPAWNS][3];
 new g_TotalSpawns;
 new CvarPrefix;
 new Prefix[ 32 ];
+new g_msg_color;
+new g_msg_xypos;
+new g_msg_enable;
+new g_grenades;
+new g_change;
+new g_szWepFile[256];
+new g_FilePointer;
+new Array:g_PrimaryWeapons;
+new Array:g_SecondaryWeapons;
 
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
@@ -205,7 +199,14 @@ public plugin_init() {
 	register_event("DeathMsg", "eDeathMsg", "a");
 	gmsgScreenFade = get_user_msgid("ScreenFade");
 	register_event( "TeamInfo", "join_team", "a");
+	g_msg_color = register_cvar("dx_msg_color","0 130 0");
+	g_msg_xypos = register_cvar("dx_msg_xypos","0.02 0.2");
+	g_msg_enable = register_cvar("dx_msg","1");
+	g_grenades = register_cvar("dx_grenades","a");
+	g_change = register_cvar("dx_change","ab");
+	register_dictionary("nightdm.txt");
 	readSpawns();
+	CreateWeaponsArray();
 }
 public plugin_cfg() 
 { 
@@ -214,27 +215,65 @@ public plugin_cfg()
 	if(!file_exists(dFile)) 
 	{ 
 		write_file ( dFile , "--------------------------------------------" ); 
-		write_file ( dFile , "NightDM v1.0 By Hartmann" ); 
+		write_file ( dFile , "NightDM v1.1 By Hartmann" ); 
 		write_file ( dFile , "Copyright (C) 2015  Hartmann" ); 
 		write_file ( dFile , "--------------------------------------------" ); 
 		write_file ( dFile , "" ); 
 		write_file ( dFile , "// Note - After editing cvars you need to change map before changes can take effect!" ); 
 		write_file ( dFile , "" );
-		write_file ( dFile , "dx_start 23 // Hour at which the DM start, example 2 = 2 am and 14 = 2 pm." ); 
-		write_file ( dFile , "dx_end 9 // Hour at which the DM end, example 2 = 2 am and 14 = 2 pm." ); 
+		write_file ( dFile , "" );
 		write_file ( dFile , "// TIME: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00" );
-		write_file ( dFile , "dx_sptime 5 // The Player get godmode for X seconds and cant get damage." ); 
-		write_file ( dFile , "dx_time 5 // Time for removing weapon on the ground." ); 
-		write_file ( dFile , "dx_hp 15// HP for kill." ); 
-		write_file ( dFile , "dx_hp_hs 40// HP for kill HS." ); 
-		write_file ( dFile , "dx_max_hp 100// Maximum player's HP." ); 
-		write_file ( dFile , "dx_armor 100 // Amout of armor to be given." ); 
-		write_file ( dFile , "dx_prefix CSDM // Prefix" ); 
-		write_file ( dFile , "" ); 
-		write_file ( dFile , "" ); 
+		write_file ( dFile , "// Hour at which the DM start, example 2 = 2 am and 14 = 2 pm." );
+		write_file ( dFile , "dx_start 23" );
+		write_file ( dFile , "" );
+		write_file ( dFile , "Hour at which the DM end, example 2 = 2 am and 14 = 2 pm." );
+		write_file ( dFile , "dx_end 9" );
+		write_file ( dFile , "" );
+		write_file ( dFile , "// The Player get godmode for X seconds and cant get damage." );
+		write_file ( dFile , "dx_sptime 5" );
+		write_file ( dFile , "" );
+		write_file ( dFile , "Time for removing weapon on the ground." );
+		write_file ( dFile , "dx_time 2" );
+		write_file ( dFile , "" );
+		write_file ( dFile , "HP for kill." );
+		write_file ( dFile , "dx_hp 15" );
+		write_file ( dFile , "" );
+		write_file ( dFile , "// HP for kill HS." );
+		write_file ( dFile , "dx_hp_hs 40" );
+		write_file ( dFile , "" );
+		write_file ( dFile , "// Maximum player's HP." );
+		write_file ( dFile , "dx_max_hp 100" );
+		write_file ( dFile , "" );
+		write_file ( dFile , "// Amout of armor to be given." );
+		write_file ( dFile , "dx_armor 100" );
+		write_file ( dFile , "" );
+		write_file ( dFile , "// Prefix" );
+		write_file ( dFile , "dx_prefix CSDM" );
+		write_file ( dFile , "" );
+		write_file ( dFile , " // Message color" );
+		write_file ( dFile , "dx_msg_color ^"0 130 0^"" );
+		write_file ( dFile , "" );
+		write_file ( dFile , "// Message X Y" );
+		write_file ( dFile , "dx_msg_xypos ^"0.02 0.2^"" );
+		write_file ( dFile , "" );
+		write_file ( dFile , "// Message. 1- On 0-off" );
+		write_file ( dFile , "dx_msg 1" );
+		write_file ( dFile , "" );
+		write_file ( dFile , "//Grenade flags" );
+		write_file ( dFile , "// a - he grenade" );
+		write_file ( dFile , "// b - smoke grenade" );
+		write_file ( dFile , "// c - flashbang" );
+		write_file ( dFile , "// ^"^" - nothing." );
+		write_file ( dFile , "dx_grenades ^"a^"" );
+		write_file ( dFile , "" );
+		write_file ( dFile , "//Change flags" );
+		write_file ( dFile , "// a - change sky on space" );
+		write_file ( dFile , "// b - change lights on d" );
+		write_file ( dFile , "// ^"^" - nothing." );
+		write_file ( dFile , "dx_change ^"ab^"" );
+		write_file ( dFile , "" );
 	} 
 } 
-
 public plugin_end() 
 { 
 	get_configsdir(configsDir, charsmax(configsDir)); 
@@ -380,11 +419,14 @@ public spawn_Preset(id)
 }
 public fw_Think(iEnt){
 	entity_set_float(iEnt, EV_FL_nextthink, get_gametime() + 1.0);
-	new timedate[32];
-	get_time("Date: %d.%m.%Y^nTime: %H:%M:%S", timedate, 31);
-	formatex(message, charsmax(message), "DM MOD O%s^nStart: %d:00 - End: %d:00^n%s",((g_nightdm)?"N":"FF"), get_pcvar_num(cvar_start), get_pcvar_num(cvar_end),timedate);
-	set_hudmessage(255, 255, 255, 0.23, 0.11, _, _, 1.0, _, _, 1);
-	ShowSyncHudMsg(0, g_MsgSync1, message);
+	if(get_pcvar_num(g_msg_enable)){
+		static r, g, b, Float:x,Float:y;
+		HudMsgPos(x,y);
+		HudMsgColor(g_msg_color, r, g, b);
+		formatex(message, charsmax(message), "%L", LANG_PLAYER, "DM_MESSAGE",((g_nightdm)?"N":"FF"), get_pcvar_num(cvar_start), get_pcvar_num(cvar_end));
+		set_hudmessage(r, g, b, x, y, _, _, 1.0, _, _, 1);
+		ShowSyncHudMsg(0, g_MsgSync1, message);
+	}
 	static hour_str[3],get_hour, get_start,get_end;
 	
 	get_time("%H",hour_str,2);
@@ -396,8 +438,15 @@ public fw_Think(iEnt){
 	
 	if(get_start < get_end ? (get_start <= get_hour && get_hour < get_end) : (get_start <= get_hour || get_hour < get_end)) {
 		g_nightdm = true;
-		server_cmd("sv_skyname space");
-		set_lights("d");
+		new szFlags[ 27 ];
+		get_pcvar_string( g_change, szFlags, charsmax( szFlags ) );
+		
+		if (containi(szFlags, "a") != -1){
+			server_cmd("sv_skyname space");
+		}
+		if (containi(szFlags, "b") != -1){
+			set_lights("d");
+		}
 		set_msg_block(get_user_msgid("RoundTime"), BLOCK_SET);
 		set_msg_block(get_user_msgid("ShowTimer"), BLOCK_SET);
 		g_restart2 = false;
@@ -408,13 +457,19 @@ public fw_Think(iEnt){
 		}else{
 		g_nightdm = false;
 		g_restart = false;
-		set_cvar_string("sv_skyname" , normalsky);
+		new szFlags[ 27 ];
+		get_pcvar_string( g_change, szFlags, charsmax( szFlags ) );
+		if (containi(szFlags, "a") != -1){
+			set_cvar_string("sv_skyname" , normalsky);
+		}
+		if (containi(szFlags, "b") != -1){
+			set_lights("#OFF");
+		}
 		set_msg_block(get_user_msgid("RoundTime"), BLOCK_NOT);
 		set_msg_block(get_user_msgid("ShowTimer"), BLOCK_NOT);
 		for (new i = 0; i < sizeof g_objective_ents; ++i) {
 			RestoreEntity(g_objective_ents[i]);
 		}
-		set_lights("#OFF");
 		restart2();
 	}  
 }
@@ -425,13 +480,24 @@ public FwdPlayerSpawnPost(id){
 			spawn_Preset(id);
 			strip_user_weapons( id );
 			give_item( id, "weapon_knife" );
-			give_item( id, "weapon_hegrenade" );
+			new szFlags[ 27 ];
+			get_pcvar_string( g_grenades, szFlags, charsmax( szFlags ) );
+			
+			if (containi(szFlags, "a") != -1){
+				give_item( id, "weapon_hegrenade" );
+			}
+			if (containi(szFlags, "b") != -1){
+				give_item( id, "weapon_smokegrenade" );
+			}
+			if (containi(szFlags, "c") != -1){
+				give_item( id, "weapon_flashbang" );
+			}
 			cs_set_user_armor(id, get_pcvar_num(gCvarArmor), CS_ARMOR_VESTHELM); 
 			new hideflags = GetHudHideFlags();
 			sp_off(id);
 			set_task(0.2,"protect",id);
 			if( g_bRememberGuns[ id ] ){
-				GiveWeapons( id );
+				PreviousWeapons(id);
 				}else{ 
 				GunsMenu(id);
 			}
@@ -499,7 +565,7 @@ public join_team()
 			
 			case 'S':  
 			{
-				client_print(Client, print_chat, "[%s] You have to join CT or Terrorist to respawn", Prefix);
+				ClientPrintColor(Client, "!g[%s] %L", Prefix , LANG_PLAYER, "DM_SPEC");
 			}
 		}
 	}
@@ -507,8 +573,8 @@ public join_team()
 }
 public spawnning(Client) {
 	ExecuteHamB(Ham_CS_RoundRespawn, Client);
-	client_print(Client, print_chat, "[%s] You have been respawned", Prefix);
-	client_print(Client, print_chat, "[%s] %s v%s, Copyright (C) 2015 by %s",Prefix, PLUGIN, VERSION, AUTHOR);
+	ClientPrintColor(Client, "!g[%s] %L", Prefix , LANG_PLAYER, "DM_RASP");
+	ClientPrintColor(Client, "!g[%s] %s v%s, Copyright (C) 2015 by %s",Prefix, PLUGIN, VERSION, AUTHOR);
 	remove_task(Client);
 }
 public PlayerKilled(Victim){
@@ -529,6 +595,7 @@ public restart(){
 		}else{
 		g_restart = true;
 		server_cmd("sv_restart 1");
+		ClientPrintColor(0, "!g[%s] %L", Prefix , LANG_PLAYER, "DM_MODS");
 	}
 	return PLUGIN_HANDLED;
 }
@@ -538,6 +605,7 @@ public restart2(){
 		}else{
 		g_restart2 = true;
 		server_cmd("sv_restart 1");
+		ClientPrintColor(0, "!g[%s] %L", Prefix , LANG_PLAYER, "DM_MODE");
 	}
 	return PLUGIN_HANDLED;
 }	
@@ -594,7 +662,7 @@ public protect(id) {
 		}
 	}
 	set_hudmessage(255, 1, 1, -1.0, -1.0, 0, 6.0, get_pcvar_float(cvar_time), 0.1, 0.2, 4);
-	ShowSyncHudMsg(id, g_MsgSync2, "Spawn Protection is enabled for %d second(s)", SPSecs);
+	ShowSyncHudMsg(id, g_MsgSync2, "%L", LANG_PLAYER, "DM_PROTECT", SPSecs);
 	
 	set_task(get_pcvar_float(cvar_time), "sp_off", id);
 	return PLUGIN_HANDLED;
@@ -611,107 +679,154 @@ public CmdGunsEnable( id )
 {
 	if( g_bRememberGuns[ id ] )
 	{
-		client_print(id, print_chat, "[%s] Gun menu will be re-enabled next spawn", Prefix );
+		ClientPrintColor(id, "!g[%s] %L", Prefix, LANG_PLAYER, "DM_GUN");
 		g_bRememberGuns[ id ] = false;
 	}
 	
 	else
-		client_print(id, print_chat, "[%s] Your Gun menu it's already activate.", Prefix );
+		ClientPrintColor(id, "!g[%s] %L", Prefix, LANG_PLAYER, "DM_GUN2");
 }
 public GunsMenu(id)
 {
-	g_hWeaponMenu = menu_create( "\rWeapons Menu\w", "WeaponMainMenu_Handler" );
-	menu_additem( g_hWeaponMenu, "New Weapons", "0" );
-	menu_additem( g_hWeaponMenu, "Last Weapons", "1" );
-	menu_additem( g_hWeaponMenu, "2 + Dont ask again", "2" );
+	new itemmenu[64];
+	formatex(itemmenu, charsmax(itemmenu), "\r%L\w", LANG_PLAYER, "DM_TITLE");
+	g_hWeaponMenu = menu_create(itemmenu , "WeaponMainMenu_Handler" );
+	formatex(itemmenu, charsmax(itemmenu), "%L", LANG_PLAYER, "DM_ITEM");
+	menu_additem( g_hWeaponMenu, itemmenu, "0" );
+	formatex(itemmenu, charsmax(itemmenu), "%L", LANG_PLAYER, "DM_ITEM2");
+	menu_additem( g_hWeaponMenu, itemmenu, "1" );
+	formatex(itemmenu, charsmax(itemmenu), "%L", LANG_PLAYER, "DM_ITEM3");
+	menu_additem( g_hWeaponMenu, itemmenu, "2" );
+	menu_setprop(g_hWeaponMenu , MPROP_EXIT , MEXIT_NEVER);
 	menu_display( id,g_hWeaponMenu, 0 );
-}
-public GunsMenu2(id)
-{
-	g_hPrimaryWeaponMenu = menu_create( "\rWeapons Menu^n\yChoose your Primary Weapon:\w", "PrimaryWeapons_Handler" );
-	
-	new szInfo[ 3 ];
-	for( new i = MIN_WEAPON; i <= MAX_WEAPON; i++ )
-	{
-		if( IsPrimaryWeapon( i ) )
-		{
-			num_to_str( i, szInfo, charsmax( szInfo ) );
-			menu_additem( g_hPrimaryWeaponMenu, g_szWeaponNames[ i ], szInfo );
-		}
-	}
-	menu_display( id,g_hPrimaryWeaponMenu, 0 );
-}
-public GunsMenu3(id){
-	g_hSecondaryWeaponMenu = menu_create( "\rWeapons Menu^n\yChoose your Secondary Weapon:\w", "SecondaryWeapons_Handler" );
-	
-	new szInfo[ 3 ];
-	for( new i = MIN_WEAPON; i <= MAX_WEAPON; i++ )
-	{
-		if( IsSecondaryWeapon( i ) )
-		{
-			num_to_str( i, szInfo, charsmax( szInfo ) );
-			menu_additem( g_hSecondaryWeaponMenu, g_szWeaponNames[ i ], szInfo );
-		}
-		
-	}
-	menu_display( id,g_hSecondaryWeaponMenu, 0 );
 }
 public WeaponMainMenu_Handler( id, hMenu, iItem )
 {
 	switch( iItem )
 	{
-		case 0: GunsMenu2(id);
+		case 0: menu_display( id,g_hPrimaryWeaponMenu, 0 );
 			case 1: 
 		{
-			GiveWeapons( id );
+			PreviousWeapons(id);
 		}
 		
 		case 2: 
 		{
-			GiveWeapons( id );
+			PreviousWeapons(id);
 			g_bRememberGuns[ id ] = true;
-			client_print(id, print_chat, "[%s] say /guns to re-enable the gun menu.",Prefix );
+			ClientPrintColor(id, "!g[%s] %L", Prefix, LANG_PLAYER, "DM_GUNS");
 		}
 	}
 }
-public PrimaryWeapons_Handler( id, hMenu, iItem )
+public PreviousWeapons(id) 
 {
-	if( iItem == MENU_EXIT )
-	{	
-		menu_destroy(hMenu);
-		return PLUGIN_HANDLED;
-	}
-	
-	new iAccess, hCallback;
-	new szData[ 6 ];
-	
-	menu_item_getinfo( hMenu, iItem, iAccess, szData, charsmax( szData ), _, _, hCallback );
-	
-	g_iPrimaryWeapon[ id ] = str_to_num( szData );
-	
-	GunsMenu3(id);
-	
-	return PLUGIN_HANDLED;
+	new szpData[32], szsData[32];
+	ArrayGetString(g_PrimaryWeapons, g_iPrimaryWeapon[id], szpData, charsmax(szpData)); 
+	ArrayGetString(g_SecondaryWeapons, g_iSecondaryWeapon[id], szsData, charsmax(szsData));
+	strtolower(szpData); 
+	strtolower(szsData); 
+	replace_all(szpData, charsmax(szpData), " ", ""); 
+	replace_all(szsData, charsmax(szsData), " ", ""); 
+	format(szpData, charsmax(szpData), "weapon_%s", szpData); 
+	format(szsData, charsmax(szsData), "weapon_%s", szsData);
+	GiveWeapons(id, szpData); 
+	GiveWeapons(id, szsData); 
 }
 
-public SecondaryWeapons_Handler( id, hMenu, iItem )
+public CreateWeaponsArray()
 {
-	if( iItem == MENU_EXIT )
+	get_configsdir(g_szWepFile, charsmax(g_szWepFile));  //gets addons/amxmodx/configs directory
+	format(g_szWepFile, charsmax(g_szWepFile), "%s/NightDM_Weapon.ini", g_szWepFile); //formats the file name for the Weapons order INI
+	g_FilePointer = fopen(g_szWepFile, "r"); 
+	
+	g_PrimaryWeapons = ArrayCreate(15); 
+	g_SecondaryWeapons = ArrayCreate(15); 
+	
+	
+	new itemmenu[64];
+	formatex(itemmenu, charsmax(itemmenu), "\r%L\w", LANG_PLAYER, "DM_TITLE2");
+	g_hPrimaryWeaponMenu = menu_create( itemmenu, "PrimaryWeapons_Handler" );
+	formatex(itemmenu, charsmax(itemmenu), "\r%L\w", LANG_PLAYER, "DM_TITLE3");
+	g_hSecondaryWeaponMenu = menu_create( itemmenu, "SecondaryWeapons_Handler" );
+	
+	new szData[32], szWeaponName[32], szpNum[3], szsNum[3];
+	new pCounter, sCounter;
+	if(g_FilePointer) 
 	{
-		menu_destroy(hMenu);
-		return PLUGIN_HANDLED;
+		while(!feof(g_FilePointer))
+		{
+			fgets(g_FilePointer, szData, charsmax(szData)); 
+			trim(szData); 
+			if(containi(szData, ";") != -1) 
+				continue;
+			
+			copy(szWeaponName, charsmax(szWeaponName), szData); 
+			replace_all(szWeaponName, charsmax(szWeaponName), " ", ""); 
+			format(szWeaponName, charsmax(szWeaponName), "weapon_%s", szWeaponName); 
+			strtolower(szWeaponName); 
+			new iWeaponID = get_weaponid(szWeaponName); 
+			
+			switch(g_WeaponSlots[iWeaponID]) 
+			{
+				case 1: 
+				{
+					ArrayPushString(g_PrimaryWeapons, szData); 
+					num_to_str(pCounter, szpNum, charsmax(szpNum));
+					menu_additem(g_hPrimaryWeaponMenu, szData, szpNum, 0); 
+					++pCounter;
+				}
+				case 2: 
+				{
+					ArrayPushString(g_SecondaryWeapons, szData); 
+					num_to_str(sCounter, szsNum, charsmax(szsNum));
+					menu_additem(g_hSecondaryWeaponMenu, szData, szsNum, 0);
+					++sCounter;
+				}
+			}
+		}
 	}
+	else
+	{
+		set_fail_state("Failed to Open Weapons List");
+	}
+	menu_setprop(g_hPrimaryWeaponMenu , MPROP_EXIT , MEXIT_NEVER);
+	menu_setprop(g_hSecondaryWeaponMenu , MPROP_EXIT , MEXIT_NEVER);
 	
-	new iAccess, hCallback;
-	new szData[ 6 ];
+	fclose(g_FilePointer); 
+}
+
+public PrimaryWeapons_Handler(id, iMenu, iItem)
+{
+	new szKey[3], iSelectedWeapon, Dummy;
+	menu_item_getinfo(iMenu, iItem, Dummy, szKey, 2, "", 0, Dummy); 
 	
-	menu_item_getinfo( hMenu, iItem, iAccess, szData, charsmax( szData ), _, _, hCallback );
+	iSelectedWeapon = str_to_num(szKey);
+	g_iPrimaryWeapon[id] = iSelectedWeapon; 
 	
-	g_iSecondaryWeapon[ id ] = str_to_num( szData );
+	new WeaponName[32], szArrayData[32];
+	ArrayGetString(g_PrimaryWeapons, iSelectedWeapon, szArrayData, charsmax(szArrayData)); 
+	replace_all(szArrayData, charsmax(szArrayData), " ", ""); 
+	format(WeaponName, charsmax(WeaponName), "weapon_%s", szArrayData); 
+	strtolower(WeaponName);
+	GiveWeapons(id, WeaponName); 
 	
-	GiveWeapons( id );
+	menu_display(id, g_hSecondaryWeaponMenu); 
+}
+
+public SecondaryWeapons_Handler(id, iMenu, iItem)
+{
+	new szKey[3], iSelectedWeapon, Dummy;
+	menu_item_getinfo(iMenu, iItem, Dummy, szKey, 2, "", 0, Dummy); 
 	
-	return PLUGIN_HANDLED;
+	iSelectedWeapon = str_to_num(szKey);
+	g_iSecondaryWeapon[id] = iSelectedWeapon; 
+	
+	new WeaponName[32], szArrayData[32];
+	ArrayGetString(g_SecondaryWeapons, iSelectedWeapon, szArrayData, charsmax(szArrayData)); 
+	replace_all(szArrayData, charsmax(szArrayData), " ", ""); 
+	format(WeaponName, charsmax(WeaponName), "weapon_%s", szArrayData); 
+	strtolower(WeaponName);
+	GiveWeapons(id, WeaponName);
 }
 public eDeathMsg() {
 	if(g_nightdm){
@@ -735,7 +850,7 @@ public eDeathMsg() {
 		
 		set_hudmessage(0, 255, 0, -1.0, 0.15, 0, 1.0, 1.0, 0.1, 0.1, -1);
 		ShowSyncHudMsg(KillerId, g_MsgSync3,"Healed +%d hp", NewKillerHealth - KillerHealth);
-	
+		
 		message_begin(MSG_ONE, gmsgScreenFade, _, KillerId);
 		write_short(1<<10);
 		write_short(1<<10);
@@ -772,13 +887,58 @@ RestoreEntity( const szClassName[ ] ){
 GetFakeClassName( const szClassName[ ], szFakeClassName[ ], const iLen ){
 	formatex( szFakeClassName, iLen, "___%s", szClassName );
 }
-GiveWeapons( id ){
-	new iPrimary = g_iPrimaryWeapon[ id ];
-	new iSecondary = g_iSecondaryWeapon[ id ];
+stock GiveWeapons(id, szWeapon[])
+{
+	if(is_user_connected(id))
+	{
+		new iWeaponId = get_weaponid(szWeapon); 
+		give_item(id, szWeapon); 
+		cs_set_user_bpammo(id, iWeaponId, g_WeaponBPAmmo[iWeaponId]); 
+	}
+}
+public HudMsgColor(cvar, &r, &g, &b)
+{
+	static color[16], piece[5];
+	get_pcvar_string(cvar, color, 15);
 	
-	give_item( id, g_szWeaponClassnames[ iPrimary ] );
-	give_item( id, g_szWeaponClassnames[ iSecondary ] );
+	strbreak( color, piece, 4, color, 15);
+	r = str_to_num(piece);
 	
+	strbreak( color, piece, 4, color, 15);
+	g = str_to_num(piece);
+	b = str_to_num(color);
+}
+
+public HudMsgPos(&Float:x, &Float:y)
+{
+	static coords[16], piece[10];
+	get_pcvar_string(g_msg_xypos, coords, 15);
+	
+	strbreak(coords, piece, 9, coords, 15);
+	x = str_to_float(piece);
+	y = str_to_float(coords);
+}
+ClientPrintColor( id, String[ ], any:... ){
+	new szMsg[ 190 ];
+	vformat( szMsg, charsmax( szMsg ), String, 3 );
+	
+	replace_all( szMsg, charsmax( szMsg ), "!n", "^1" );
+	replace_all( szMsg, charsmax( szMsg ), "!t", "^3" );
+	replace_all( szMsg, charsmax( szMsg ), "!g", "^4" );
+	
+	static msgSayText = 0;
+	static fake_user;
+	
+	if( !msgSayText )
+	{
+		msgSayText = get_user_msgid( "SayText" );
+		fake_user = get_maxplayers( ) + 1;
+	}
+	
+	message_begin( id ? MSG_ONE_UNRELIABLE : MSG_BROADCAST, msgSayText, _, id );
+	write_byte( id ? id : fake_user );
+	write_string( szMsg );
+	message_end( );
 }
 /* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
 *{\\ rtf1\\ ansi\\ ansicpg1252\\ deff0\\ deflang1033{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ f0\\ fs16 \n\\ par }
