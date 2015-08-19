@@ -15,3 +15,21 @@ DM_TITLE3 = Weapons Menu^n\yChoose your Secondary Weapon:
 DM_GUNS = !tsay !g/guns !tto re-enable the gun menu.
 DM_MODS = !tStarting DeathMatch ...
 DM_MODE = !tEnd DeathMatch ...
+
+[es]
+
+DM_MESSAGE = DM MOD O%s^nComienza en: %d:00 - Finaliza en: %d:00
+DM_SPEC = !tDebes unirte al equipo !gCT !to !gTerrorist !tpara revivir.
+DM_RASP = !tFuiste revivido.
+DM_PROTECT = Proteccion de Spawn disponible durante %d Segundo(s)
+DM_GUN = !tMenu de Armas sera reactivado la proxima vez que revivas.
+DM_GUN2 = !tTu menu de Armas ya esta activado!
+DM_TITLE = Menu de Armas
+DM_ITEM = Nuevas Armas
+DM_ITEM2 = Ultimas Armas
+DM_ITEM3 = 2 + No preguntar denuevo
+DM_TITLE2 = Menu de Armas^n\yElige tu arma primaria
+DM_TITLE3 = Menu de Armas^n\yElige tu arma secundaria
+DM_GUNS = !tsay !g/guns !tpara re-activar el menu de armas
+DM_MODS = !tComenzando DeathMatch
+DM_MODE = !tFinalizando DeathMatch  
