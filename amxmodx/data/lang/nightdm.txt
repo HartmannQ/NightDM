@@ -33,3 +33,21 @@ DM_TITLE3 = Menu de Armas^n\yElige tu arma secundaria
 DM_GUNS = !tsay !g/guns !tpara re-activar el menu de armas
 DM_MODS = !tComenzando DeathMatch
 DM_MODE = !tFinalizando DeathMatch  
+
+[bp]
+
+DM_MESSAGE = DM MOD O%s^nInicio: %d:00 - Fim: %d:00
+DM_SPEC = !tVoce tem que entrar como !gCT!t ou !gTerrorist!t para renascer.
+DM_RASP = !tVoce acaba de renascer.
+DM_PROTECT = Protecao ao resnascer ativa por %d segundo(s)
+DM_GUN = !tO menu de armas sera re-ativado no proximo nascimento.
+DM_GUN2 = !tSeu menu de armas ja esta desativado.
+DM_TITLE = Menu de Armas
+DM_ITEM = Novas Armas
+DM_ITEM2 = Ultimas Armas
+DM_ITEM3 = 2 + Nao pergunte novamente
+DM_TITLE2 = Menu de Armas^n\yEscolha sua arma primaria:
+DM_TITLE3 = Menu de Armas^n\yEscolha sua arma secundaria:
+DM_GUNS = !tsay !g/guns!t para re-ativar o menu de armas.
+DM_MODS = !tIniciando o DeathMatch ...
+DM_MODE = !tFim do DeathMatch ...  
