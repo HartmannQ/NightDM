@@ -51,3 +51,20 @@ DM_TITLE3 = Menu de Armas^n\yEscolha sua arma secundaria:
 DM_GUNS = !tsay !g/guns!t para re-ativar o menu de armas.
 DM_MODS = !tIniciando o DeathMatch ...
 DM_MODE = !tFim do DeathMatch ...  
+
+[hu]
+DM_MESSAGE = DM MOD O%s^nIndul: %d:00 - Vége: %d:00
+DM_SPEC = !tCsatlakoznod kell egy csapatba az újraéledéshez.
+DM_RASP = !tÚjraéledtél.
+DM_PROTECT = Védelem aktív még %d másodpercig
+DM_GUN = !tFegyvermenü engedélyezve a következő újraéledéskor.
+DM_GUN2 = !tA fegyvermenüd jelenleg aktív.
+DM_TITLE = Fegyver Menü
+DM_ITEM = Új fegyverek
+DM_ITEM2 = Utóbbi fegyverek
+DM_ITEM3 = 2 + Ne kérdezz újra
+DM_TITLE2 = Fegyver Menü^n\yVálassz fegyvert:
+DM_TITLE3 = Fegyver Menü^n\yVálassz pisztolyt:
+DM_GUNS = !tÍrd be, hogy !g/guns !ta fegyver menü újra engedélyezéséhez.
+DM_MODS = !tDeathMatch indul...
+DM_MODE = !tDeathMatch vége...
