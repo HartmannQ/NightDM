@@ -68,3 +68,20 @@ DM_TITLE3 = Fegyver Menü^n\yVálassz pisztolyt:
 DM_GUNS = !tÍrd be, hogy !g/guns !ta fegyver menü újra engedélyezéséhez.
 DM_MODS = !tDeathMatch indul...
 DM_MODE = !tDeathMatch vége...
+
+[bg]
+DM_MESSAGE = DM MID 0%s^nNachalo: %d:00 - Krai: %d:00
+DM_SPEC = !tTryabva da se prisuedinite kum !gCounter-Terrorist !tili Terrorist !tza da se sujivite.
+DM_RASP = !tVie se sujivihte.
+DM_PROTECT = Spawn Protection e aktivirana za %d sekunda(sekundi)
+DM_GUN = !tMeniuto za orujiyata shte se aktivira sled sledvashtoto sujivyavane.
+DM_GUN2 = !tVasheto orujeino meniu veche e aktivno.
+DM_TITLE = Orujeino Meniu.
+DM_ITEM = Novi Orujiya
+DM_ITEM2 = Posledni Orujiya
+DM_ITEM3 = 2 + Ne pitai otnovo
+DM_TITLE2 = Orujeino Meniu^n\yIzberete vasheto Glavno Orujie:
+DM_TITLE3 = Orujeino Meniu^n\yIzberete vasheto Vtoro Orujie:
+DM_GUNS = !tnapishete !g/guns !tza da vkliuchite meniuto s orujiyata otnovo.
+DM_MODS = !tNachalo na DeathMatch ...
+DM_MODE = !tKrai na DeathMatch ...  
