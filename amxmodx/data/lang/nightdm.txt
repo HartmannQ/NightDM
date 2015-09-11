@@ -85,3 +85,21 @@ DM_TITLE3 = Orujeino Meniu^n\yIzberete vasheto Vtoro Orujie:
 DM_GUNS = !tnapishete !g/guns !tza da vkliuchite meniuto s orujiyata otnovo.
 DM_MODS = !tNachalo na DeathMatch ...
 DM_MODE = !tKrai na DeathMatch ...  
+
+[de]
+
+DM_MESSAGE = DM MOD O%s^nStart: %d:00 - Ende: %d:00
+DM_SPEC = !tDu musst !gCT !toder !gT !t beitreten um zu respawnen.
+DM_RASP = !tDu wurdest ge-respawnt.
+DM_PROTECT = Spawn-schutz ist aktiviert für %d sekunde(n)
+DM_GUN = !tWaffen Menü wird beim nächsten spawn wieder aktiviert.
+DM_GUN2 = !tDein Waffen Menü ist bereits aktiv.
+DM_TITLE = Waffen Menü
+DM_ITEM = Neue Waffen
+DM_ITEM2 = Letzte Waffen
+DM_ITEM3 = 2 + Nicht wieder fragen
+DM_TITLE2 = Waffen Menü^n\yWähle deine Primär Waffe:
+DM_TITLE3 = Waffen Menü^n\yWähle deine Sekundär Waffe:
+DM_GUNS = !tSchreibe !g/guns !tum das waffen menü wieder anzuzeigen.
+DM_MODS = !tStarte Deathmatch ...
+DM_MODE = !tBeende Deathmatch ...
