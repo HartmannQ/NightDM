@@ -103,3 +103,21 @@ DM_TITLE3 = Waffen Menü^n\yWähle deine Sekundär Waffe:
 DM_GUNS = !tSchreibe !g/guns !tum das waffen menü wieder anzuzeigen.
 DM_MODS = !tStarte Deathmatch ...
 DM_MODE = !tBeende Deathmatch ...
+
+[ro]
+
+DM_MESSAGE = DM MOD O%s^nStart: %d:00 - Sfarsit: %d:00
+DM_SPEC = !tTrebuie sa devii !gCT !tsau !gTerrorist !tpentru respawn.
+DM_RASP = !tTe-ai respawnat.
+DM_PROTECT = Protectia de Spawn e activa pentru %d secunde
+DM_GUN = !tMeniul de arme va fi reactivat la urmatorul spawn.
+DM_GUN2 = !tMeniul de Arme este deja activat.
+DM_TITLE = Meniu de arme
+DM_ITEM = Arme noi
+DM_ITEM2 = Ultimele arme
+DM_ITEM3 = 2 + Nu mai intreba
+DM_TITLE2 = Meniu de arme^n\yAlege Arma Primara:
+DM_TITLE3 = Meniu de arme^n\yAlege Arma Secundara:
+DM_GUNS = !tscrie !g/guns !tpentru a reactiva meniul de arme.
+DM_MODS = !tIncepe Deathmatchul ...
+DM_MODE = !tSe finalizeaza Deathmatchul ...
